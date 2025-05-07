@@ -1,0 +1,33 @@
+name: Deploy Evolution API to Railway
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Railway CLI
+        run: |
+          curl -sSL https://railway.app/install.sh | sh
+          echo "$RAILWAY_TOKEN" | railway login --token
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --yes
+
+      - name: Set Environment Variables
+        run: |
+          railway env set SERVER_TYPE=http
+          railway env set SERVER_PORT=8080
+          railway env set CORS_ORIGIN=*
+          railway env set DATABASE_ENABLED=true
+          railway env set DATABASE_PROVIDER=postgresql
+          railway env set DATABASE_CONNECTION_URI=${{ secrets.DATABASE_URL }}
+          railway env set AUTHENTICATION_API_KEY=${{ secrets.EVO_API_KEY }}
