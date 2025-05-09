@@ -7,22 +7,24 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env: # Definir o RAILWAY_TOKEN no nível do JOB para que todos os passos o herdem
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup Railway CLI
         run: |
-          curl -sSL https://railway.app/install.sh | sh
-          echo "$RAILWAY_TOKEN" | railway login --token
+          curl -fsSL https://railway.app/install.sh | sh
+          # A linha de login explícito foi removida daqui, pois o token no env do job deve ser suficiente
 
       - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        # O RAILWAY_TOKEN já está no ambiente deste passo devido ao 'env:' no nível do job
         run: |
           railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
           railway up --yes
 
       - name: Set Environment Variables
+        # O RAILWAY_TOKEN já está no ambiente deste passo
         run: |
           railway env set SERVER_TYPE=http
           railway env set SERVER_PORT=8080
