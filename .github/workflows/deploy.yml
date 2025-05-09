@@ -7,38 +7,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Não precisa do env: RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} aqui no nível do job se cada passo que precisa vai declarar
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Railway CLI and Login
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} # Define o token no ambiente DESTE PASSO
+      - name: Setup Railway CLI
         run: |
           curl -fsSL https://railway.app/install.sh | sh
-          railway login # Tenta o login. Em ambientes de CI, com RAILWAY_TOKEN no env, isso deve funcionar.
-                        # Se o CLI for mais antigo e esperar o token como argumento:
-                        # railway login $RAILWAY_TOKEN
-                        # A documentação sugere que apenas ter RAILWAY_TOKEN no env é suficiente.
+          # Nenhum comando de login explícito aqui.
+          # Vamos confiar que o RAILWAY_TOKEN no env dos próximos passos será usado.
 
       - name: Deploy to Railway
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} # Garante que está aqui também
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # Boa prática adicionar todos os secrets usados no passo
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          # RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # O --project já passa isso
         run: |
-          railway link --project $RAILWAY_PROJECT_ID
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
           railway up --yes
 
       - name: Set Environment Variables
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          EVO_API_KEY: ${{ secrets.EVO_API_KEY }}
+          # As outras secrets são usadas diretamente no comando com $NOME_DO_SECRET_NO_ENV
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+          EVO_API_KEY_SECRET: ${{ secrets.EVO_API_KEY }}
         run: |
           railway env set SERVER_TYPE=http
           railway env set SERVER_PORT=8080
           railway env set CORS_ORIGIN=*
           railway env set DATABASE_ENABLED=true
           railway env set DATABASE_PROVIDER=postgresql
-          railway env set DATABASE_CONNECTION_URI=$DATABASE_URL
-          railway env set AUTHENTICATION_API_KEY=$EVO_API_KEY
+          railway env set DATABASE_CONNECTION_URI=$DATABASE_URL_SECRET
+          railway env set AUTHENTICATION_API_KEY=$EVO_API_KEY_SECRET
